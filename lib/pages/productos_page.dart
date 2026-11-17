@@ -1,5 +1,6 @@
 
 import 'package:flutter/material.dart';
+import '../utils/formatos_entrada.dart';
 import '../utils/validadores.dart';
 import '../models/producto.dart';
 import '../services/api_service.dart';
@@ -505,7 +506,10 @@ class _ProductoFormDialogState
     );
 
     precioController = TextEditingController(
-      text: producto?.precioUnitario.toString() ?? '',
+      text: producto?.precioUnitario.toStringAsFixed(
+            Validadores.maxDecimalesPrecio,
+          ) ??
+          '',
     );
 
     existenciasController = TextEditingController(
@@ -530,10 +534,10 @@ class _ProductoFormDialogState
 
     final producto = Producto(
       idProducto: widget.producto?.idProducto ?? 0,
-      nombre: nombreController.text.trim(),
-      precioUnitario: double.parse(precioController.text),
+      nombre: Validadores.normalizarEspacios(nombreController.text),
+      precioUnitario: Validadores.parsearPrecio(precioController.text),
       estatus: estatus,
-      existencias: int.parse(existenciasController.text),
+      existencias: int.parse(existenciasController.text.trim()),
       tipo: tipo,
     );
 
@@ -553,22 +557,22 @@ class _ProductoFormDialogState
       content: SingleChildScrollView(
         child: Form(
           key: formKey,
+          autovalidateMode: AutovalidateMode.onUserInteraction,
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
               TextFormField(
                 controller: nombreController,
+                textCapitalization: TextCapitalization.sentences,
+                textInputAction: TextInputAction.next,
+                maxLength: Validadores.maxNombreProducto,
+                inputFormatters: FormatosEntrada.nombreProducto(),
                 decoration: const InputDecoration(
                   labelText: 'Nombre del producto',
                   prefixIcon: Icon(Icons.inventory_2_outlined),
                   border: OutlineInputBorder(),
                 ),
-                validator: (value) {
-                  if (value == null || value.trim().isEmpty) {
-                    return 'Ingresa el nombre';
-                  }
-                  return null;
-                },
+                validator: Validadores.validarNombreProducto,
               ),
 
               const SizedBox(height: 14),
@@ -579,19 +583,14 @@ class _ProductoFormDialogState
                     const TextInputType.numberWithOptions(
                   decimal: true,
                 ),
+                textInputAction: TextInputAction.next,
+                inputFormatters: FormatosEntrada.precio(),
                 decoration: const InputDecoration(
                   labelText: 'Precio unitario',
                   prefixIcon: Icon(Icons.attach_money),
                   border: OutlineInputBorder(),
                 ),
-                validator: (value) {
-                  final precio = double.tryParse(value ?? '');
-
-                  if (precio == null || precio < 0) {
-                    return 'Ingresa un precio válido';
-                  }
-                  return null;
-                },
+                validator: Validadores.validarPrecio,
               ),
 
               const SizedBox(height: 14),
@@ -599,19 +598,14 @@ class _ProductoFormDialogState
               TextFormField(
                 controller: existenciasController,
                 keyboardType: TextInputType.number,
+                textInputAction: TextInputAction.done,
+                inputFormatters: FormatosEntrada.existencias(),
                 decoration: const InputDecoration(
                   labelText: 'Existencias',
                   prefixIcon: Icon(Icons.warehouse_outlined),
                   border: OutlineInputBorder(),
                 ),
-                validator: (value) {
-                  final cantidad = int.tryParse(value ?? '');
-
-                  if (cantidad == null || cantidad < 0) {
-                    return 'Ingresa una cantidad válida';
-                  }
-                  return null;
-                },
+                validator: Validadores.validarExistencias,
               ),
 
               const SizedBox(height: 14),

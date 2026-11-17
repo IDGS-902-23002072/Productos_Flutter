@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 
 import '../models/usuario.dart';
 import '../services/usuario_service.dart';
+import '../utils/formatos_entrada.dart';
+import '../utils/validadores.dart';
 
 class UsuariosPage extends StatefulWidget {
   const UsuariosPage({super.key});
@@ -50,7 +52,13 @@ class _UsuariosPageState extends State<UsuariosPage> {
     final resultado = await showDialog<Map<String, dynamic>>(
       context: context,
       builder: (context) {
-        return UsuarioFormDialog(usuario: usuario);
+        return UsuarioFormDialog(
+          usuario: usuario,
+          correosExistentes: usuarios
+              .where((u) => u.idUsuario != usuario?.idUsuario)
+              .map((u) => u.correo)
+              .toList(),
+        );
       },
     );
 
@@ -387,9 +395,13 @@ class UsuarioCard extends StatelessWidget {
 class UsuarioFormDialog extends StatefulWidget {
   final Usuario? usuario;
 
+  /// Correos de los demás usuarios, para evitar registrar uno repetido.
+  final List<String> correosExistentes;
+
   const UsuarioFormDialog({
     super.key,
     this.usuario,
+    this.correosExistentes = const [],
   });
 
   @override
@@ -403,6 +415,7 @@ class _UsuarioFormDialogState extends State<UsuarioFormDialog> {
   late TextEditingController correoController;
   late TextEditingController telefonoController;
   late TextEditingController contrasenaController;
+  late TextEditingController confirmarContrasenaController;
 
   late bool estatus;
 
@@ -427,6 +440,7 @@ class _UsuarioFormDialogState extends State<UsuarioFormDialog> {
     );
 
     contrasenaController = TextEditingController();
+    confirmarContrasenaController = TextEditingController();
 
     estatus = usuario?.estatus ?? true;
   }
@@ -437,6 +451,7 @@ class _UsuarioFormDialogState extends State<UsuarioFormDialog> {
     correoController.dispose();
     telefonoController.dispose();
     contrasenaController.dispose();
+    confirmarContrasenaController.dispose();
     super.dispose();
   }
 
@@ -445,9 +460,9 @@ class _UsuarioFormDialogState extends State<UsuarioFormDialog> {
 
     final usuario = Usuario(
       idUsuario: widget.usuario?.idUsuario ?? 0,
-      nombre: nombreController.text.trim(),
-      correo: correoController.text.trim(),
-      telefono: telefonoController.text.trim(),
+      nombre: Validadores.normalizarEspacios(nombreController.text),
+      correo: correoController.text.trim().toLowerCase(),
+      telefono: Validadores.normalizarEspacios(telefonoController.text),
       estatus: estatus,
     );
 
@@ -468,22 +483,22 @@ class _UsuarioFormDialogState extends State<UsuarioFormDialog> {
       content: SingleChildScrollView(
         child: Form(
           key: formKey,
+          autovalidateMode: AutovalidateMode.onUserInteraction,
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
               TextFormField(
                 controller: nombreController,
+                textCapitalization: TextCapitalization.words,
+                textInputAction: TextInputAction.next,
+                maxLength: Validadores.maxNombreUsuario,
+                inputFormatters: FormatosEntrada.nombreUsuario(),
                 decoration: const InputDecoration(
                   labelText: 'Nombre completo',
                   prefixIcon: Icon(Icons.person_outline),
                   border: OutlineInputBorder(),
                 ),
-                validator: (value) {
-                  if (value == null || value.trim().isEmpty) {
-                    return 'Ingresa el nombre';
-                  }
-                  return null;
-                },
+                validator: Validadores.validarNombreUsuario,
               ),
 
               const SizedBox(height: 14),
@@ -491,19 +506,21 @@ class _UsuarioFormDialogState extends State<UsuarioFormDialog> {
               TextFormField(
                 controller: correoController,
                 keyboardType: TextInputType.emailAddress,
+                textInputAction: TextInputAction.next,
+                autocorrect: false,
+                enableSuggestions: false,
+                inputFormatters: FormatosEntrada.correo(),
                 decoration: const InputDecoration(
                   labelText: 'Correo electrónico',
                   prefixIcon: Icon(Icons.email_outlined),
                   border: OutlineInputBorder(),
                 ),
-                validator: (value) {
-                  if (value == null ||
-                      !RegExp(r'^[^@]+@[^@]+\.[^@]+$')
-                          .hasMatch(value.trim())) {
-                    return 'Ingresa un correo válido';
-                  }
-                  return null;
-                },
+                validator: (value) =>
+                    Validadores.validarCorreo(value) ??
+                    Validadores.validarCorreoDisponible(
+                      value,
+                      widget.correosExistentes,
+                    ),
               ),
 
               const SizedBox(height: 14),
@@ -511,17 +528,14 @@ class _UsuarioFormDialogState extends State<UsuarioFormDialog> {
               TextFormField(
                 controller: telefonoController,
                 keyboardType: TextInputType.phone,
+                textInputAction: TextInputAction.next,
+                inputFormatters: FormatosEntrada.telefono(),
                 decoration: const InputDecoration(
                   labelText: 'Teléfono',
                   prefixIcon: Icon(Icons.phone_outlined),
                   border: OutlineInputBorder(),
                 ),
-                validator: (value) {
-                  if (value == null || value.trim().isEmpty) {
-                    return 'Ingresa el teléfono';
-                  }
-                  return null;
-                },
+                validator: Validadores.validarTelefono,
               ),
 
               const SizedBox(height: 14),
@@ -529,26 +543,46 @@ class _UsuarioFormDialogState extends State<UsuarioFormDialog> {
               TextFormField(
                 controller: contrasenaController,
                 obscureText: true,
+                autocorrect: false,
+                enableSuggestions: false,
+                textInputAction: TextInputAction.next,
+                inputFormatters: FormatosEntrada.contrasena(),
                 decoration: InputDecoration(
                   labelText: editando
                       ? 'Nueva contraseña (opcional)'
                       : 'Contraseña',
+                  helperText:
+                      'Mínimo ${Validadores.minContrasena} caracteres, '
+                      'con letras y números',
+                  helperMaxLines: 2,
                   prefixIcon: const Icon(Icons.lock_outline),
                   border: const OutlineInputBorder(),
                 ),
-                validator: (value) {
-                  if (!editando &&
-                      (value == null || value.length < 6)) {
-                    return 'La contraseña debe tener al menos 6 caracteres';
-                  }
-                  if (editando &&
-                      value != null &&
-                      value.isNotEmpty &&
-                      value.length < 6) {
-                    return 'La contraseña debe tener al menos 6 caracteres';
-                  }
-                  return null;
-                },
+                validator: (value) => Validadores.validarContrasena(
+                  value,
+                  obligatoria: !editando,
+                ),
+              ),
+
+              const SizedBox(height: 14),
+
+              TextFormField(
+                controller: confirmarContrasenaController,
+                obscureText: true,
+                autocorrect: false,
+                enableSuggestions: false,
+                textInputAction: TextInputAction.done,
+                inputFormatters: FormatosEntrada.contrasena(),
+                decoration: const InputDecoration(
+                  labelText: 'Confirmar contraseña',
+                  prefixIcon: Icon(Icons.lock_reset_outlined),
+                  border: OutlineInputBorder(),
+                ),
+                validator: (value) =>
+                    Validadores.validarConfirmacionContrasena(
+                  value,
+                  contrasenaController.text,
+                ),
               ),
 
               const SizedBox(height: 10),
