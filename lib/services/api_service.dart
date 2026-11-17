@@ -1,5 +1,6 @@
 
 import 'dart:convert';
+import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 
 import '../config/api_config.dart';
@@ -37,6 +38,11 @@ class ApiService {
 
     if (response.statusCode != 200 &&
         response.statusCode != 201) {
+      // Diagnóstico: muestra en la consola lo enviado y lo que respondió la API.
+      debugPrint(
+        'POST ${ApiConfig.productos} enviado=${jsonEncode(producto.toJson())} '
+        'respuesta=${response.statusCode} ${response.body}',
+      );
       throw Exception(
         'Error al registrar producto: ${response.statusCode} ${response.body}',
       );

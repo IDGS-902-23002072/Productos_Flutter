@@ -1,5 +1,6 @@
 
 import 'dart:convert';
+import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 
 import '../config/api_config.dart';
@@ -42,6 +43,11 @@ class UsuarioService {
 
     if (response.statusCode != 200 &&
         response.statusCode != 201) {
+      // Diagnóstico (sin contraseña): lo enviado y lo que respondió la API.
+      debugPrint(
+        'POST ${ApiConfig.usuarios} enviado=${jsonEncode(usuario.toJson())} '
+        'respuesta=${response.statusCode} ${response.body}',
+      );
       throw Exception(
         'Error al registrar usuario: ${response.statusCode} ${response.body}',
       );
