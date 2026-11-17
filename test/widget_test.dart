@@ -1,30 +1,63 @@
-// This is a basic Flutter widget test.
-//
-// To perform an interaction with a widget in your test, use the WidgetTester
-// utility in the flutter_test package. For example, you can send tap and scroll
-// gestures. You can also use WidgetTester to find child widgets in the widget
-// tree, read text, and verify that the values of widget properties are correct.
-
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:productos_app/main.dart';
+import 'package:productos_app/pages/productos_page.dart';
+import 'package:productos_app/pages/usuarios_page.dart';
+
+Widget _app(Widget dialogo) => MaterialApp(home: Scaffold(body: dialogo));
 
 void main() {
-  testWidgets('Counter increments smoke test', (WidgetTester tester) async {
-    // Build our app and trigger a frame.
-    await tester.pumpWidget(const MyApp());
+  testWidgets('Formulario de producto muestra errores si está vacío',
+      (WidgetTester tester) async {
+    await tester.pumpWidget(_app(const ProductoFormDialog()));
 
-    // Verify that our counter starts at 0.
-    expect(find.text('0'), findsOneWidget);
-    expect(find.text('1'), findsNothing);
-
-    // Tap the '+' icon and trigger a frame.
-    await tester.tap(find.byIcon(Icons.add));
+    await tester.tap(find.text('Guardar'));
     await tester.pump();
 
-    // Verify that our counter has incremented.
-    expect(find.text('0'), findsNothing);
-    expect(find.text('1'), findsOneWidget);
+    expect(find.text('Ingresa el nombre del producto'), findsOneWidget);
+    expect(find.text('Ingresa el precio'), findsOneWidget);
+    expect(find.text('Ingresa las existencias'), findsOneWidget);
+  });
+
+  testWidgets('Precio convierte la coma en punto',
+      (WidgetTester tester) async {
+    await tester.pumpWidget(_app(const ProductoFormDialog()));
+
+    await tester.enterText(
+      find.widgetWithText(TextFormField, 'Precio unitario'),
+      '12,5',
+    );
+    await tester.pump();
+
+    expect(find.text('12.5'), findsOneWidget);
+  });
+
+  testWidgets('Formulario de usuario exige datos y contraseña',
+      (WidgetTester tester) async {
+    await tester.pumpWidget(_app(const UsuarioFormDialog()));
+
+    await tester.tap(find.text('Guardar'));
+    await tester.pump();
+
+    expect(find.text('Ingresa el nombre del usuario'), findsOneWidget);
+    expect(find.text('Ingresa el correo electrónico'), findsOneWidget);
+    expect(find.text('Ingresa el teléfono'), findsOneWidget);
+    expect(find.text('Ingresa una contraseña'), findsOneWidget);
+  });
+
+  testWidgets('Formulario de usuario detecta correo repetido',
+      (WidgetTester tester) async {
+    await tester.pumpWidget(
+      _app(const UsuarioFormDialog(correosExistentes: ['ana@correo.com'])),
+    );
+
+    await tester.enterText(
+      find.widgetWithText(TextFormField, 'Correo electrónico'),
+      'ANA@correo.com',
+    );
+    await tester.tap(find.text('Guardar'));
+    await tester.pump();
+
+    expect(find.text('Este correo ya está registrado'), findsOneWidget);
   });
 }
