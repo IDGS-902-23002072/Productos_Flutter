@@ -49,11 +49,10 @@ class FormatosEntrada {
         LengthLimitingTextInputFormatter(Validadores.maxCorreo),
       ];
 
-  /// Teléfono: dígitos, espacio, guion, paréntesis y +.
+  /// Teléfono: solo dígitos, máximo 10.
   static List<TextInputFormatter> telefono() => [
-        FilteringTextInputFormatter.allow(RegExp(r'[0-9+() -]')),
-        _EspaciosLimpios(),
-        LengthLimitingTextInputFormatter(Validadores.maxTelefono),
+        FilteringTextInputFormatter.digitsOnly,
+        LengthLimitingTextInputFormatter(Validadores.digitosTelefono),
       ];
 
   /// Contraseña: ASCII imprimible y letras latinas acentuadas, sin espacios.

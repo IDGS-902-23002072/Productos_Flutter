@@ -24,9 +24,7 @@ class Validadores {
   static const int maxNombreUsuario = 100;
   static const int maxCorreo = 150;
   static const int maxParteLocalCorreo = 64;
-  static const int maxTelefono = 20;
-  static const int minDigitosTelefono = 10;
-  static const int maxDigitosTelefono = 15;
+  static const int digitosTelefono = 10;
   static const int minContrasena = 8;
   static const int maxContrasena = 64;
 
@@ -60,7 +58,7 @@ class Validadores {
     r'@(?:[A-Za-z0-9](?:[A-Za-z0-9-]{0,61}[A-Za-z0-9])?\.)+[A-Za-z]{2,24}$',
   );
 
-  static final RegExp _regexTelefono = RegExp(r'^\+?[0-9 ()-]+$');
+  static final RegExp _regexTelefono = RegExp(r'^[0-9]+$');
 
   // Contraseña: ASCII imprimible (sin espacios) y letras latinas con acento.
   static final RegExp _regexCaracteresContrasena = RegExp(
@@ -244,29 +242,14 @@ class Validadores {
       return 'Ingresa el teléfono';
     }
 
-    final telefono = normalizarEspacios(valor);
-
-    if (telefono.length > maxTelefono) {
-      return 'Máximo $maxTelefono caracteres';
-    }
+    final telefono = valor.trim();
 
     if (!_regexTelefono.hasMatch(telefono)) {
-      return 'Solo dígitos, espacios, guiones, paréntesis y + al inicio';
+      return 'Solo se permiten números';
     }
 
-    final abiertos = '('.allMatches(telefono).length;
-    final cerrados = ')'.allMatches(telefono).length;
-
-    if (abiertos != cerrados) {
-      return 'Revisa los paréntesis del teléfono';
-    }
-
-    final digitos = telefono.replaceAll(RegExp(r'[^0-9]'), '');
-
-    if (digitos.length < minDigitosTelefono ||
-        digitos.length > maxDigitosTelefono) {
-      return 'El teléfono debe tener entre $minDigitosTelefono y '
-          '$maxDigitosTelefono dígitos';
+    if (telefono.length != digitosTelefono) {
+      return 'El teléfono debe tener $digitosTelefono dígitos';
     }
 
     return null;
